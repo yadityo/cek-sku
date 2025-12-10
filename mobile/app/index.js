@@ -134,7 +134,7 @@ export default function App() {
   // --- RENDERING ---
 
   const renderSettings = () => (
-    <ScrollView style={styles.formContainer}>
+    <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
       <Text style={styles.headerTitle}>Konfigurasi Server</Text>
 
       <Text style={styles.label}>IP Address Komputer (Server API):</Text>
@@ -226,7 +226,7 @@ export default function App() {
       {loading && <ActivityIndicator size="large" color="#007BFF" style={{marginTop: 20}} />}
 
       {/* HASIL */}
-      <ScrollView style={styles.resultList}>
+      <ScrollView style={styles.resultList} showsVerticalScrollIndicator={false}>
         {results.map((item, index) => (
           <View key={index} style={styles.card}>
             <Text style={styles.cardTitle}>{item.name}</Text>
