@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet, Text, View, TextInput, TouchableOpacity,
-  Alert, ScrollView, ActivityIndicator, Keyboard
+  Alert, ScrollView, ActivityIndicator, Keyboard, Platform, Image
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
 
 export default function App() {
   // --- STATE ---
   const [currentScreen, setCurrentScreen] = useState('search');
-  
+
   // Config Database
   const [config, setConfig] = useState({
     apiIp: '',
@@ -131,203 +132,376 @@ export default function App() {
     }
   };
 
-  // --- RENDERING ---
+  const handleScanPress = () => {
+    Alert.alert("Fitur Scan", "Fitur ini akan segera hadir!");
+  };
+
+  // --- UI COMPONENTS ---
 
   const renderSettings = () => (
-    <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
-      <Text style={styles.headerTitle}>Konfigurasi Server</Text>
-
-      <Text style={styles.label}>IP Address Komputer (Server API):</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Cth: 192.168.1.5"
-        value={config.apiIp}
-        onChangeText={(t) => setConfig({ ...config, apiIp: t })}
-        keyboardType="numeric"
-      />
-
-      <Text style={styles.label}>Nama Database:</Text>
-      <TextInput 
-        style={styles.input} 
-        value={config.dbName} 
-        onChangeText={(t) => setConfig({ ...config, dbName: t })} 
-      />
-
-      {/* STORE CODE (User DB) */}
-      <Text style={styles.label}>Store Code:</Text>
-      <View style={styles.inputContainer}> 
-        <TextInput 
-          style={styles.inputField}
-          value={config.dbUser} 
-          onChangeText={(t) => setConfig({ ...config, dbUser: t })} 
-          secureTextEntry={!showStoreCode} 
-          placeholder="Masukkan Kode Toko"
+    <View style={styles.searchPageContainer}>
+      {/* Header Container dengan Background Hijau Toska */}
+      <View style={styles.headerBackground}>
+        <Image
+          source={require('../assets/images/logo.png')}
+          style={styles.headerLogo}
         />
-        <TouchableOpacity onPress={() => setShowStoreCode(!showStoreCode)} style={styles.iconArea}>
-          <Ionicons name={showStoreCode ? "eye" : "eye-off"} size={24} color="gray" />
-        </TouchableOpacity>
       </View>
 
-      {/* PASSWORD */}
-      <Text style={styles.label}>Password:</Text> 
-      <View style={styles.inputContainer}>
+      {/* Konten Utama Setting */}
+      <ScrollView style={styles.formContainer} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}>
+        <Text style={[styles.headerTitle, { color: '#333', marginTop: 20 }]}>Profile & Server</Text>
+
+        <Text style={styles.label}>IP Address Komputer (Server API):</Text>
         <TextInput
-          style={styles.inputField}
-          value={config.dbPass}
-          onChangeText={(t) => setConfig({ ...config, dbPass: t })}
-          secureTextEntry={!showPassword}
-          placeholder="Masukkan Password"
+          style={styles.input}
+          placeholder="Cth: 192.168.1.5"
+          value={config.apiIp}
+          onChangeText={(t) => setConfig({ ...config, apiIp: t })}
+          keyboardType="numeric"
         />
-        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.iconArea}>
-          <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="gray" />
-        </TouchableOpacity>
-      </View>
 
-      <View style={styles.buttonRow}>
-        <TouchableOpacity style={[styles.button, styles.btnTest]} onPress={testConnection}>
-          <Text style={styles.btnText}>Test Koneksi</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.btnSave]} onPress={saveSettings}>
-          <Text style={styles.btnText}>Simpan</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        <Text style={styles.label}>Nama Database:</Text>
+        <TextInput
+          style={styles.input}
+          value={config.dbName}
+          onChangeText={(t) => setConfig({ ...config, dbName: t })}
+        />
+
+        {/* STORE CODE (User DB) */}
+        <Text style={styles.label}>Store Code (User DB):</Text>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.inputField}
+            value={config.dbUser}
+            onChangeText={(t) => setConfig({ ...config, dbUser: t })}
+            secureTextEntry={!showStoreCode}
+            placeholder="Masukkan Kode Toko"
+          />
+          <TouchableOpacity onPress={() => setShowStoreCode(!showStoreCode)} style={styles.iconArea}>
+            <Ionicons name={showStoreCode ? "eye" : "eye-off"} size={24} color="gray" />
+          </TouchableOpacity>
+        </View>
+
+        {/* PASSWORD */}
+        <Text style={styles.label}>Password:</Text>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.inputField}
+            value={config.dbPass}
+            onChangeText={(t) => setConfig({ ...config, dbPass: t })}
+            secureTextEntry={!showPassword}
+            placeholder="Masukkan Password"
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.iconArea}>
+            <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="gray" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={[styles.button, styles.btnTest]} onPress={testConnection}>
+            <Text style={styles.btnText}>Test Koneksi</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.button, styles.btnSave]} onPress={saveSettings}>
+            <Text style={styles.btnText}>Simpan</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
   );
 
   const renderSearch = () => (
     <View style={styles.searchPageContainer}>
-      <Text style={styles.headerTitle}>Cari Barang</Text>
-      
-      {/* BARIS CONTROLLER */}
-      <View style={styles.inputGroup}>
-        {/* INPUT */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.inputField}
-            placeholder="Nama / SKU"
-            value={keyword}
-            onChangeText={setKeyword}
-            onSubmitEditing={searchProduct}
-          />
+
+      {/* Header Container dengan Background Hijau Toska */}
+      <View style={styles.headerBackground}>
+        <Image
+          source={require('../assets/images/logo.png')}
+          style={styles.headerLogo}
+        />
+      </View>
+
+
+      {/* Konten Utama Pencarian */}
+      <View style={styles.contentPadding}>
+
+        {/* BARIS CONTROLLER (Input & Search Button) */}
+        <View style={[styles.inputGroup, { marginTop: 20 }]}>
+
+          {/* INPUT CONTAINER (Termasuk Tombol Clear di dalamnya) */}
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.inputField}
+              placeholder="Cari Nama / SKU..."
+              value={keyword}
+              onChangeText={setKeyword}
+              onSubmitEditing={searchProduct}
+            />
+
+            {/* TOMBOL CLEAR/RESET BARU */}
+            {keyword.length > 0 && (
+              <TouchableOpacity onPress={resetSearch} style={styles.clearIconArea}>
+                <Ionicons name="close-circle" size={24} color="#888" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* BUTTON SEARCH */}
+          <TouchableOpacity style={styles.btnSearch} onPress={searchProduct}>
+            <Ionicons name="search" size={24} color="#fff" />
+          </TouchableOpacity>
+
+          {/* OLD BUTTON RESET TELAH DIHAPUS DARI SINI */}
+
         </View>
 
-        {/* BUTTON SEARCH */}
-        <TouchableOpacity style={styles.btnSearch} onPress={searchProduct}>
-          <Ionicons name="search" size={24} color="#fff" />
+        {/* LOADING */}
+        {loading && <ActivityIndicator size="large" color="#007BFF" style={{ marginTop: 20 }} />}
+
+        {/* HASIL */}
+        <ScrollView style={styles.resultList} contentContainerStyle={{ paddingBottom: 100 }}>
+          {results.map((item, index) => (
+            <View key={index} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>{item.name}</Text>
+                <Text style={styles.cardQty}>Stok: {item.quantity}</Text>
+              </View>
+              <Text style={styles.cardSubtitle}>SKU: {item.sku}</Text>
+            </View>
+          ))}
+
+          {results.length === 0 && !loading && keyword.length > 0 && (
+            <Text style={styles.emptyText}>Data tidak ditemukan.</Text>
+          )}
+        </ScrollView>
+      </View>
+    </View>
+  );
+
+  // --- BOTTOM NAVIGATION ---
+  const renderBottomNav = () => (
+    <View style={styles.bottomNavWrapper}>
+      {/* Background Bar */}
+      <View style={styles.bottomNavBar}>
+
+        {/* Kanan: Cek Stok (Search) */}
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => setCurrentScreen('search')}
+        >
+          <Ionicons
+            name="search"
+            size={28}
+            color={currentScreen === 'search' ? '#25a298' : '#888'}
+          />
+          <Text style={[styles.navLabel, currentScreen === 'search' && styles.navLabelActive]}>
+            Cari Stok
+          </Text>
         </TouchableOpacity>
 
-        {/* BUTTON RESET */}
-        <TouchableOpacity style={styles.btnReset} onPress={resetSearch}>
-          <Ionicons name="refresh" size={24} color="#fff" />
+        {/* Spacer untuk tombol tengah */}
+        <View style={{ width: 100 }} />
+
+        {/* Kiri: Pengaturan (Settings) */}
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => setCurrentScreen('settings')}
+        >
+          <Ionicons
+            name="settings"
+            size={28}
+            color={currentScreen === 'settings' ? '#25a298' : '#888'}
+          />
+          <Text style={[styles.navLabel, currentScreen === 'settings' && styles.navLabelActive]}>
+            Pengaturan
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {/* LOADING */}
-      {loading && <ActivityIndicator size="large" color="#007BFF" style={{marginTop: 20}} />}
-
-      {/* HASIL */}
-      <ScrollView style={styles.resultList} showsVerticalScrollIndicator={false}>
-        {results.map((item, index) => (
-          <View key={index} style={styles.card}>
-            <Text style={styles.cardTitle}>{item.name}</Text>
-            <Text style={styles.cardSubtitle}>SKU: {item.sku}</Text>
-            <Text style={styles.cardQty}>Stok: {item.quantity}</Text>
-          </View>
-        ))}
-        
-        {results.length === 0 && !loading && keyword.length > 0 && (
-          <Text style={styles.emptyText}>Data tidak ditemukan.</Text>
-        )}
-      </ScrollView>
+      {/* Tombol Tengah (Floating) */}
+      <TouchableOpacity
+        style={styles.centerButton}
+        onPress={handleScanPress}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="scan-sharp" size={32} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      {/* Navbar */}
-      <View style={styles.navbar}>
-        <TouchableOpacity onPress={() => setCurrentScreen('search')} style={{ padding: 10 }}>
-          <Text style={[styles.navText, currentScreen === 'search' && styles.navActive]}>CARI</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setCurrentScreen('settings')} style={{ padding: 10 }}>
-          <Text style={[styles.navText, currentScreen === 'settings' && styles.navActive]}>SETTING</Text>
-        </TouchableOpacity>
-      </View>
+      {/* StatusBar diatur menjadi warna #25a298 dan teks putih */}
+      <StatusBar style="light" backgroundColor="#25a298" />
 
-      <View style={styles.content}>
+      <View style={{ flex: 1 }}>
         {currentScreen === 'settings' ? renderSettings() : renderSearch()}
       </View>
+
+      {/* Render Navigasi Bawah */}
+      {renderBottomNav()}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5', paddingTop: 40 },
-  navbar: { 
-    flexDirection: 'row', justifyContent: 'center', backgroundColor: '#fff', 
-    borderBottomWidth: 1, borderColor: '#ddd' 
-  },
-  navText: { fontSize: 16, fontWeight: 'bold', color: '#888' },
-  navActive: { color: '#007BFF', borderBottomWidth: 2, borderColor: '#007BFF' },
-  
-  content: { flex: 1, padding: 20 },
-  
-  // Style untuk Halaman
-  formContainer: { flex: 1 },
-  searchPageContainer: { flex: 1 }, // Tambahan agar halaman cari full screen
-  
-  headerTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, color: '#333' },
-  label: { fontSize: 14, marginBottom: 5, color: '#555' },
-  
-  // Input Biasa (IP, DB Name)
-  input: { 
-    backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd', 
-    borderRadius: 8, padding: 10, marginBottom: 15, fontSize: 16 
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
   },
 
-  // Input dengan Icon (Password/User)
+  contentPadding: {
+    paddingHorizontal: 20
+  },
+
+  // -- BOTTOM NAV STYLES --
+  bottomNavWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 90,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  bottomNavBar: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: 70,
+    backgroundColor: '#1E1E2D',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 10,
+  },
+  navItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+    marginHorizontal: 25,
+  },
+  navLabel: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+  },
+  navLabelActive: {
+    color: '#25a298',
+    fontWeight: 'bold',
+  },
+  centerButton: {
+    position: 'absolute',
+    bottom: 40,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#25a298',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
+    borderWidth: 4,
+    borderColor: '#f8f9fa'
+  },
+
+  // -- HEADER STYLES --
+  headerBackground: {
+    backgroundColor: '#25a298',
+    paddingTop: Platform.OS === 'android' ? 20 : 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 100,
+  },
+
+  headerLogo: {
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
+  },
+
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff'
+  },
+
+  // -- FORM/INPUT STYLES --
+  formContainer: { flex: 1 },
+  searchPageContainer: { flex: 1 },
+
+  label: { fontSize: 14, marginBottom: 5, color: '#555' },
+  input: {
+    backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd',
+    borderRadius: 12, padding: 12, marginBottom: 15, fontSize: 16
+  },
   inputContainer: {
     flexDirection: 'row', alignItems: 'center', borderWidth: 1,
-    borderColor: '#ddd', borderRadius: 8, backgroundColor: '#fff',
-    paddingHorizontal: 10, marginBottom: 15, height: 50,
+    borderColor: '#ddd', borderRadius: 12, backgroundColor: '#fff',
+    paddingHorizontal: 12, marginBottom: 15, height: 50,
   },
-  
-  // Input Field di dalam Container (Search atau Password)
+
+  // INPUT FIELD di dalam SearchContainer (perlu flex:1 agar mengisi ruang)
   inputField: {
     flex: 1, height: '100%', fontSize: 16, color: '#333'
   },
+
+  // Style baru untuk tombol clear (X)
+  clearIconArea: {
+    paddingLeft: 8,
+    paddingVertical: 5,
+    justifyContent: 'center',
+  },
+
   iconArea: { padding: 5 },
 
-  // Group Pencarian
+  // -- BUTTONS STYLES (Adjusted for Consistency) --
   inputGroup: { flexDirection: 'row', marginBottom: 15 },
+
+  // Search Container (sekarang menampung input dan clear button)
   searchContainer: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
-    borderWidth: 1, borderColor: '#ddd', borderRadius: 8,
-    paddingHorizontal: 10, marginRight: 8, height: 50,
+    flex: 1,
+    flexDirection: 'row', // Biarkan input & clear icon menyamping
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    marginRight: 10,
+    height: 50,
   },
 
-  // Tombol
   buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-  button: { flex: 1, padding: 15, borderRadius: 8, alignItems: 'center', marginHorizontal: 5 },
-  btnTest: { backgroundColor: '#0d6efd' },
-  btnSave: { backgroundColor: '#198754' },
+  button: { flex: 1, padding: 15, borderRadius: 12, alignItems: 'center', marginHorizontal: 5 },
+
+  // PRIMARY ACTION: Save (Warna Hijau Toska #25a298)
+  btnSave: { backgroundColor: '#25a298' },
+
+  // SECONDARY ACTION: Test Connection (Warna Abu-abu Sekunder)
+  btnTest: { backgroundColor: '#888' },
+
   btnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  
-  btnSearch: { 
-    backgroundColor: '#007BFF', width: 50, height: 50, borderRadius: 8, 
-    justifyContent: 'center', alignItems: 'center', marginRight: 8 
-  },
-  btnReset: { 
-    backgroundColor: '#FF3B30', width: 50, height: 50, borderRadius: 8, 
-    justifyContent: 'center', alignItems: 'center' 
+
+  // PRIMARY ACTION: Search (Warna Hijau Toska #25a298)
+  btnSearch: {
+    backgroundColor: '#25a298',
+    width: 50, height: 50, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center',
+    // Menghapus marginRight: 10 karena Reset button dipindahkan
   },
 
-  // Hasil
+
+  // -- CARD STYLES --
   resultList: { flex: 1, marginTop: 10 },
-  card: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 10, elevation: 2 },
-  cardTitle: { fontSize: 18, fontWeight: 'bold' },
-  cardSubtitle: { color: '#666', marginBottom: 5 },
-  cardDesc: { fontStyle: 'italic', marginBottom: 5 },
-  cardQty: { fontWeight: 'bold', color: '#007BFF', fontSize: 16 },
+  card: { backgroundColor: '#fff', padding: 15, borderRadius: 16, marginBottom: 12, elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', flex: 1 },
+  cardSubtitle: { color: '#666', marginBottom: 5, fontSize: 14 },
+  cardDesc: { fontStyle: 'italic', marginBottom: 5, color: '#888' },
+  cardQty: { fontWeight: 'bold', color: '#007BFF', fontSize: 20 },
   emptyText: { textAlign: 'center', marginTop: 20, color: '#888' }
 });

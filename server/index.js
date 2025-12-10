@@ -107,7 +107,6 @@ app.post('/api/search', async (req, res) => {
       SELECT 
         "Description" as name, 
         "SKU" as sku, 
-        "Description" as description, 
         "EndQty" as quantity 
       FROM "trStock" 
       WHERE 
