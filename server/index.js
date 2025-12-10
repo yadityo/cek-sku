@@ -2,20 +2,32 @@ const express = require('express');
 const { Client } = require('pg');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const crypto = require('crypto'); // Tambahkan library crypto
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Fungsi pembantu untuk koneksi ke DB dinamis
-// Kita membuat koneksi baru setiap kali request masuk berdasarkan data dari App
+// =========================================================
+// KONFIGURASI DATABASE UTAMA (KUNCI UTAMA)
+// =========================================================
+const DB_USER = 'postgres';      
+const DB_PASSWORD = 'password';  // GANTI dengan password database PostgreSQL Anda
+// =========================================================
+
+// --- FUNGSI HELPER: ENKRIPSI MD5 ---
+const hashMD5 = (str) => {
+  return crypto.createHash('md5').update(str).digest('hex');
+};
+
+// Fungsi Helper Koneksi Database
 const executeQuery = async (dbConfig, queryText, params = []) => {
   const client = new Client({
-    host: dbConfig.host, // IP komputer/localhost database
+    host: dbConfig.host,
     port: 5432,
-    user: dbConfig.user,
-    password: dbConfig.password,
     database: dbConfig.database,
+    user: DB_USER,
+    password: DB_PASSWORD,
   });
 
   try {
@@ -24,43 +36,96 @@ const executeQuery = async (dbConfig, queryText, params = []) => {
     await client.end();
     return res.rows;
   } catch (err) {
-    await client.end();
-    throw err; // Lempar error agar bisa ditangkap di route
+    try { await client.end(); } catch (e) {} 
+    throw err;
   }
 };
 
-// 1. Endpoint untuk Test Koneksi
+// 1. ENDPOINT: TEST KONEKSI & LOGIN (MD5 SUPPORT)
 app.post('/api/test-connection', async (req, res) => {
-  const { host, user, password, database } = req.body;
+  const { host, user: inputStoreCode, password: inputStorePassword, database } = req.body;
   
+  const client = new Client({
+    host,
+    port: 5432,
+    database,
+    user: DB_USER,     
+    password: DB_PASSWORD,
+  });
+
   try {
-    // Coba query sederhana 'SELECT NOW()' untuk cek koneksi
-    const result = await executeQuery({ host, user, password, database }, 'SELECT NOW()');
-    res.json({ status: 'success', message: 'Terhubung ke PostgreSQL!', time: result[0].now });
+    await client.connect();
+
+    // UBAH PASSWORD INPUT MENJADI MD5 SEBELUM DICEK
+    // Asumsi: Password di database disimpan dalam format hex string MD5
+    const hashedPassword = hashMD5(inputStorePassword);
+
+    const checkQuery = `
+      SELECT "StoreCode" 
+      FROM "msStoreInfo" 
+      WHERE "StoreCode" = $1 AND "Password" = $2
+    `;
+    
+    // Gunakan hashedPassword untuk pencocokan
+    const checkResult = await client.query(checkQuery, [inputStoreCode, hashedPassword]);
+    await client.end();
+
+    if (checkResult.rows.length > 0) {
+      res.json({ 
+        status: 'success', 
+        message: `Login Berhasil! Selamat datang ${inputStoreCode}.` 
+      });
+    } else {
+      res.status(401).json({ 
+        status: 'error', 
+        message: 'Gagal: Store Code atau Password salah.' 
+      });
+    }
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ status: 'error', message: 'Gagal terhubung: ' + error.message });
+    try { await client.end(); } catch (e) {} 
+    console.error('Login Error:', error.message);
+    
+    if(error.message.includes('password authentication failed')) {
+       return res.status(500).json({ status: 'error', message: 'Setting Server Salah: Password DB di server/index.js tidak cocok.' });
+    }
+
+    res.status(500).json({ status: 'error', message: 'Koneksi Error: ' + error.message });
   }
 });
 
-// 2. Endpoint untuk Cari Barang
+// 2. ENDPOINT: PENCARIAN BARANG
 app.post('/api/search', async (req, res) => {
-  const { dbConfig, keyword } = req.body; // dbConfig berisi host, user, pass, dll
+  const { dbConfig, keyword } = req.body; 
 
   try {
-    // Cari berdasarkan Nama ATAU SKU (Case insensitive dengan ILIKE)
+    if (!keyword || keyword.trim().length === 0) {
+      return res.json({ status: 'success', data: [] });
+    }
+
     const query = `
-      SELECT name, sku, description, quantity 
-      FROM products 
-      WHERE name ILIKE $1 OR sku ILIKE $1
-      ORDER BY quantity DESC
+      SELECT 
+        "Description" as name, 
+        "SKU" as sku, 
+        "Description" as description, 
+        "EndQty" as quantity 
+      FROM "trStock" 
+      WHERE 
+        "Description" ILIKE $1 OR 
+        "SKU" ILIKE $1
+      ORDER BY "LastUpdate" DESC
+      LIMIT 50
     `;
+    
     const values = [`%${keyword}%`];
 
     const products = await executeQuery(dbConfig, query, values);
+    
     res.json({ status: 'success', data: products });
+
   } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message });
+    console.error('Search Error:', error.message);
+    res.status(500).json({ status: 'error', message: 'Gagal cari: ' + error.message });
   }
 });
 

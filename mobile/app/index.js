@@ -154,7 +154,7 @@ export default function App() {
       />
 
       {/* STORE CODE (User DB) */}
-      <Text style={styles.label}>Store Code (DB User):</Text>
+      <Text style={styles.label}>Store Code:</Text>
       <View style={styles.inputContainer}> 
         <TextInput 
           style={styles.inputField}
@@ -231,7 +231,6 @@ export default function App() {
           <View key={index} style={styles.card}>
             <Text style={styles.cardTitle}>{item.name}</Text>
             <Text style={styles.cardSubtitle}>SKU: {item.sku}</Text>
-            <Text style={styles.cardDesc}>{item.description}</Text>
             <Text style={styles.cardQty}>Stok: {item.quantity}</Text>
           </View>
         ))}
@@ -310,8 +309,8 @@ const styles = StyleSheet.create({
   // Tombol
   buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
   button: { flex: 1, padding: 15, borderRadius: 8, alignItems: 'center', marginHorizontal: 5 },
-  btnTest: { backgroundColor: '#6c757d' },
-  btnSave: { backgroundColor: '#28a745' },
+  btnTest: { backgroundColor: '#0d6efd' },
+  btnSave: { backgroundColor: '#198754' },
   btnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   
   btnSearch: { 
