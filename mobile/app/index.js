@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet, Text, View, TextInput, TouchableOpacity,
-  Alert, ScrollView, ActivityIndicator, Keyboard, Platform, Image
+  Alert, ScrollView, ActivityIndicator, Keyboard, Platform, Image, KeyboardAvoidingView
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { BlurView } from 'expo-blur';
 
 export default function App() {
   // --- STATE ---
@@ -83,6 +84,7 @@ export default function App() {
       const json = await response.json();
 
       if (json.status === 'success') {
+        console.log(json.data)
         Alert.alert('Berhasil', json.message);
       } else {
         Alert.alert('Gagal', json.message);
@@ -143,14 +145,14 @@ export default function App() {
       {/* Header Container dengan Background Hijau Toska */}
       <View style={styles.headerBackground}>
         <Image
-          source={require('../assets/images/logo.png')}
+          source={require('../assets/images/elzatta-logo.png')}
           style={styles.headerLogo}
         />
       </View>
 
       {/* Konten Utama Setting */}
       <ScrollView style={styles.formContainer} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}>
-        <Text style={[styles.headerTitle, { color: '#333', marginTop: 20 }]}>Profile & Server</Text>
+        
 
         <Text style={styles.label}>IP Address Komputer (Server API):</Text>
         <TextInput
@@ -158,7 +160,7 @@ export default function App() {
           placeholder="Cth: 192.168.1.5"
           value={config.apiIp}
           onChangeText={(t) => setConfig({ ...config, apiIp: t })}
-          keyboardType="numeric"
+          keyboardType={Platform.OS === 'ios' ? 'decimal-pad' : 'numeric'}
         />
 
         <Text style={styles.label}>Nama Database:</Text>
@@ -211,25 +213,26 @@ export default function App() {
   );
 
   const renderSearch = () => (
-    <View style={styles.searchPageContainer}>
+    <View style={[styles.searchPageContainer, { flex: 1 }]}>
 
       {/* Header Container dengan Background Hijau Toska */}
       <View style={styles.headerBackground}>
         <Image
-          source={require('../assets/images/logo.png')}
+          source={require('../assets/images/elzatta-logo.png')}
           style={styles.headerLogo}
         />
       </View>
 
 
       {/* Konten Utama Pencarian */}
-      <View style={styles.contentPadding}>
+      <View style={[styles.contentPadding, { flex: 1 }]}>
 
         {/* BARIS CONTROLLER (Input & Search Button) */}
         <View style={[styles.inputGroup, { marginTop: 20 }]}>
 
           {/* INPUT CONTAINER (Termasuk Tombol Clear di dalamnya) */}
           <View style={styles.searchContainer}>
+            
             <TextInput
               style={styles.inputField}
               placeholder="Cari Nama / SKU..."
@@ -241,7 +244,7 @@ export default function App() {
             {/* TOMBOL CLEAR/RESET BARU */}
             {keyword.length > 0 && (
               <TouchableOpacity onPress={resetSearch} style={styles.clearIconArea}>
-                <Ionicons name="close-circle" size={24} color="#888" />
+                <Ionicons name="close-circle" size={24} color="#dc3545" />
               </TouchableOpacity>
             )}
           </View>
@@ -259,16 +262,19 @@ export default function App() {
         {loading && <ActivityIndicator size="large" color="#007BFF" style={{ marginTop: 20 }} />}
 
         {/* HASIL */}
-        <ScrollView style={styles.resultList} contentContainerStyle={{ paddingBottom: 100 }}>
-          {results.map((item, index) => (
-            <View key={index} style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{item.name}</Text>
-                <Text style={styles.cardQty}>Stok: {item.quantity}</Text>
+        <ScrollView style={styles.resultList} contentContainerStyle={{ paddingBottom: 140 }}>
+          {results.map((item, index) => {
+            console.log('Render item:', item);
+            return (
+              <View key={index} style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTitle}>{item.name}</Text>
+                  <Text style={styles.cardQty}>Stok: {item.quantity}</Text>
+                </View>
+                <Text style={styles.cardSubtitle}>SKU: {item.sku}</Text>
               </View>
-              <Text style={styles.cardSubtitle}>SKU: {item.sku}</Text>
-            </View>
-          ))}
+            );
+          })}
 
           {results.length === 0 && !loading && keyword.length > 0 && (
             <Text style={styles.emptyText}>Data tidak ditemukan.</Text>
@@ -280,10 +286,10 @@ export default function App() {
 
   // --- BOTTOM NAVIGATION ---
   const renderBottomNav = () => (
-    <View style={styles.bottomNavWrapper}>
-      {/* Background Bar */}
+    <View style={styles.bottomNavWrapper} pointerEvents="box-none">
+      {/* Background Bar dengan efek blur */}
       <View style={styles.bottomNavBar}>
-
+        <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
         {/* Kanan: Cek Stok (Search) */}
         <TouchableOpacity
           style={styles.navItem}
@@ -292,7 +298,7 @@ export default function App() {
           <Ionicons
             name="search"
             size={28}
-            color={currentScreen === 'search' ? '#25a298' : '#888'}
+            color={currentScreen === 'search' ? '#511f3f' : '#888'}
           />
           <Text style={[styles.navLabel, currentScreen === 'search' && styles.navLabelActive]}>
             Cari Stok
@@ -310,7 +316,7 @@ export default function App() {
           <Ionicons
             name="settings"
             size={28}
-            color={currentScreen === 'settings' ? '#25a298' : '#888'}
+            color={currentScreen === 'settings' ? '#511f3f' : '#888'}
           />
           <Text style={[styles.navLabel, currentScreen === 'settings' && styles.navLabelActive]}>
             Pengaturan
@@ -331,13 +337,19 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {/* StatusBar diatur menjadi warna #25a298 dan teks putih */}
-      <StatusBar style="light" backgroundColor="#25a298" />
-
+      {/* StatusBar untuk Android: teks hitam, background putih */}
+      {Platform.OS === 'android' && (
+        <StatusBar style="dark" backgroundColor="#fff" />
+      )}
       <View style={{ flex: 1 }}>
-        {currentScreen === 'settings' ? renderSettings() : renderSearch()}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={0}
+        >
+          {currentScreen === 'settings' ? renderSettings() : renderSearch()}
+        </KeyboardAvoidingView>
       </View>
-
       {/* Render Navigasi Bawah */}
       {renderBottomNav()}
     </View>
@@ -370,7 +382,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     height: 70,
-    backgroundColor: '#1E1E2D',
+    backgroundColor: 'transparent',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 10,
@@ -387,7 +399,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   navLabelActive: {
-    color: '#25a298',
+    color: '#511f3f',
     fontWeight: 'bold',
   },
   centerButton: {
@@ -396,7 +408,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#25a298',
+    backgroundColor: '#511f3f',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: "#000",
@@ -410,11 +422,11 @@ const styles = StyleSheet.create({
 
   // -- HEADER STYLES --
   headerBackground: {
-    backgroundColor: '#25a298',
-    paddingTop: Platform.OS === 'android' ? 20 : 0,
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 100,
+    marginVertical: 20,
+    height: 80,
   },
 
   headerLogo: {
@@ -478,17 +490,17 @@ const styles = StyleSheet.create({
   buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
   button: { flex: 1, padding: 15, borderRadius: 12, alignItems: 'center', marginHorizontal: 5 },
 
-  // PRIMARY ACTION: Save (Warna Hijau Toska #25a298)
-  btnSave: { backgroundColor: '#25a298' },
+  // PRIMARY ACTION: Save (Warna Hijau Toska #511f3f)
+  btnSave: { backgroundColor: '#511f3f' },
 
   // SECONDARY ACTION: Test Connection (Warna Abu-abu Sekunder)
   btnTest: { backgroundColor: '#888' },
 
   btnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
-  // PRIMARY ACTION: Search (Warna Hijau Toska #25a298)
+  // PRIMARY ACTION: Search (Warna Hijau Toska #511f3f)
   btnSearch: {
-    backgroundColor: '#25a298',
+    backgroundColor: '#511f3f',
     width: 50, height: 50, borderRadius: 12,
     justifyContent: 'center', alignItems: 'center',
     // Menghapus marginRight: 10 karena Reset button dipindahkan
@@ -497,7 +509,7 @@ const styles = StyleSheet.create({
 
   // -- CARD STYLES --
   resultList: { flex: 1, marginTop: 10 },
-  card: { backgroundColor: '#fff', padding: 15, borderRadius: 16, marginBottom: 12, elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
+  card: { backgroundColor: '#fff', padding: 15, borderRadius: 16, marginBottom: 12, elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, borderWidth: 1, borderColor: 'white' },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
   cardTitle: { fontSize: 18, fontWeight: 'bold', flex: 1 },
   cardSubtitle: { color: '#666', marginBottom: 5, fontSize: 14 },
