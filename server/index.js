@@ -112,7 +112,7 @@ app.post('/api/search', async (req, res) => {
         "Description" ILIKE $1 OR 
         "SKU" ILIKE $1
       ORDER BY "LastUpdate" DESC
-      LIMIT 1   
+      LIMIT 1
     `;
 
     const values = [`%${keyword}%`];
