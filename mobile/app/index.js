@@ -7,10 +7,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { BlurView } from 'expo-blur';
+import ScanScreen from './ScanScreen';
 
 export default function App() {
   // --- STATE ---
   const [currentScreen, setCurrentScreen] = useState('search');
+  const [showScanner, setShowScanner] = useState(false);
 
   // Config Database
   const [config, setConfig] = useState({
@@ -135,7 +137,15 @@ export default function App() {
   };
 
   const handleScanPress = () => {
-    Alert.alert("Fitur Scan", "Fitur ini akan segera hadir!");
+    setShowScanner(true);
+  };
+
+  const handleBarcodeScanned = (data) => {
+    setShowScanner(false);
+    setKeyword(data);
+    setTimeout(() => {
+      searchProduct();
+    }, 300);
   };
 
   // --- UI COMPONENTS ---
@@ -341,17 +351,25 @@ export default function App() {
       {Platform.OS === 'android' && (
         <StatusBar style="dark" backgroundColor="#fff" />
       )}
-      <View style={{ flex: 1 }}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={0}
-        >
-          {currentScreen === 'settings' ? renderSettings() : renderSearch()}
-        </KeyboardAvoidingView>
-      </View>
-      {/* Render Navigasi Bawah */}
-      {renderBottomNav()}
+      {showScanner ? (
+        <ScanScreen
+          onScan={handleBarcodeScanned}
+          onClose={() => setShowScanner(false)}
+        />
+      ) : (
+        <>
+          <View style={{ flex: 1 }}>
+            <KeyboardAvoidingView
+              style={{ flex: 1 }}
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              keyboardVerticalOffset={0}
+            >
+              {currentScreen === 'settings' ? renderSettings() : renderSearch()}
+            </KeyboardAvoidingView>
+          </View>
+          {renderBottomNav()}
+        </>
+      )}
     </View>
   );
 }
